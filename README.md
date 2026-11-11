@@ -1,37 +1,37 @@
 # AsuraComic Downloader
 
-
 ## Introduction
 
-AsuraComic Downloader is a versatile tool designed to simplify the process of downloading manga from AsuraComic / AsuraScans. It offers both a powerful command-line interface (CLI) for automation and an intuitive graphical user interface (GUI) for ease of use, allowing users to search, browse, and download manga chapters efficiently.
+AsuraComic Downloader downloads manga from Asura Scans. It ships a
+command-line interface for automation and a PyQt5 desktop GUI for
+interactive use, both built on the same asynchronous engine.
+
+Version 4 is a ground-up rewrite. It talks to the site's **JSON API**
+directly instead of driving a browser, so there is no Chromium download, no
+DOM scraping and no scrolling - just fast, direct requests.
 
 ## Features
 
-### Command-Line Interface (CLI)
+### Command-Line Interface
 
-The CLI provides robust functionality for users who prefer script-based operations or integration into other tools.
+*   **Search** - find series by title, with configurable result pages.
+*   **Chapters** - list every chapter of a series, flagging paywalled ones.
+*   **Download** - fetch one chapter and compile it to PDF or CBZ.
+*   **Batch** - download many chapters at once (`1-5`, `1,3,7-9`, or `--all`).
+*   **In-memory compilation** - pages are held in RAM and streamed straight
+    into the PDF/CBZ; the images are never written to disk first.
+*   **Paywall-aware** - a premium chapter is reported and skipped, and the
+    batch keeps going.
 
-*   **Search Manga:** Find manga by query with options to specify the number of search pages.
-*   **Get Chapters:** List all available chapters for a given manga series URL.
-*   **Download Single Chapter:** Download a specific chapter by its URL.
-*   **Batch Download:** Download multiple chapters from a manga series in parallel, supporting ranges (e.g., '1-5'), specific lists (e.g., '1,3,5'), or all chapters.
-*   **Format Conversion:** Convert downloaded images to PDF or CBZ formats.
-*   **Automatic Deletion:** Option to delete original image folders after successful conversion.
-*   **Interactive Mode:** A guided interactive wizard for searching, browsing, and downloading manga with real-time logs.
+### Graphical User Interface
 
-### Graphical User Interface (GUI)
-
-The GUI offers a user-friendly experience with visual controls for all core functionalities.
-
-*   **Intuitive Search:** Search for manga and view results in a clickable list. Clicking a result automatically populates the manga URL for download.
-*   **Seamless Download Workflow:** Input a manga series URL, fetch and display available chapters, then select single or multiple chapters for download.
-*   **Chapter Selection:** Easily select individual chapters, or use "Select All" / "Deselect All" buttons for convenience.
-*   **Output Options:** Choose output directory and conversion format (PDF/CBZ).
-*   **Transparent Design:** A modern, transparent glass-like aesthetic for buttons, input fields, and lists, including the format selection dropdown.
+*   **Search** with a clickable result list that fills in the series field.
+*   **Chapter browser** with per-chapter checkboxes, select-all / select-none.
+*   **Output options** - directory, PDF / CBZ / raw images, keep-images toggle.
+*   **Non-blocking** - all network and compilation work happens off the Qt
+    thread, so the window stays responsive and the batch can be stopped.
 
 ## Installation
-
-To get started with AsuraComic Downloader, follow these steps carefully.
 
 1.  **Clone the repository:**
     ```bash
@@ -54,101 +54,93 @@ To get started with AsuraComic Downloader, follow these steps carefully.
     ```bash
     pip install -r requirements.txt
     ```
+    Python **3.15 or newer** is required - the project uses PEP 810 (lazy
+    imports), PEP 814 (`frozendict`), PEP 798 (unpacking in comprehensions)
+    and PEP 686 (UTF-8 by default).
 
-4.  **Install Playwright browsers (important):**
+4.  **Optional extras:**
     ```bash
-    python -m playwright install
+    pip install "asuracomic-downloader[gui]"      # PyQt5 desktop GUI
+    pip install "asuracomic-downloader[brotli]"   # brotli content-encoding
     ```
-
-Note: Without this step, dynamic scraping will fail.
 
 ## Usage
 
-### GUI Usage
-
-To launch the graphical user interface:
+### GUI
 
 ```bash
-python gui/main.py
+python main.py gui
 ```
 
 ![GUI Screenshot](gui/GUI.PNG)
 
-From the GUI, you can:
-1.  Use the "Search Manga" section to find series. Click on a search result to automatically populate the manga URL.
-2.  In the "Download Chapters" section, enter a manga series URL and click "Get Chapters" to list all available chapters.
-3.  Select the desired chapters from the list using the checkboxes, or use "Select All" / "Deselect All".
-4.  Choose your output directory and desired conversion format.
-5.  Click "Download Selected Chapters" to start the download process.
+1.  Search for a series and click a result to fill in the series field.
+2.  Click **Load Chapters** to list the available chapters.
+3.  Tick the chapters you want (or use **Select All** / **Select None**).
+4.  Choose an output directory and a format.
+5.  Click **Download Selected**. **Stop** cancels the run.
 
-### CLI Usage
+### CLI
 
-The CLI provides several commands for direct interaction.
+```bash
+# Search
+python main.py search "solo swordmaster" --pages 2
 
-Note: Asura domains frequently change between `.net`, `.com`, and other variants. Adjust the URL based on the current active site.
+# List chapters
+python main.py chapters https://asurascans.com/comics/solo-swordmaster
 
-*   **Search for Manga:**
-    ```bash
-    python cli/main.py search "Manga Title" --pages 2
-    ```
+# Download one chapter as PDF
+python main.py download https://asurascans.com/comics/solo-swordmaster/chapter/25 \
+    --output my_downloads --format pdf
 
-*   **Get Chapters for a Series:**
-    ```bash
-    python cli/main.py get-chapters "https://asuracomic.net/series/example-manga-url"
-    ```
+# Batch download
+python main.py batch solo-swordmaster --chapters "1-5" --format cbz
+python main.py batch solo-swordmaster --chapters "1,3,7-9"
+python main.py batch solo-swordmaster --all --format pdf
+```
 
-*   **Download a Single Chapter:**
-    ```bash
-    python cli/main.py download "https://asuracomic.net/series/example-manga-url/chapter/1" -o my_downloads --format pdf --delete
-    ```
+Run `python main.py <command> --help` for the full option list, or see
+[CLI_usage.md](CLI_usage.md).
 
-*   **Batch Download Chapters:**
-    ```bash
-    # Download a range of chapters (e.g., chapters 1 to 5)
-    python cli/main.py batch-download "https://asuracomic.net/series/example-manga-url" --chapters "1-5"
+## How it works
 
-    # Download specific chapters (e.g., chapters 1, 3, and 5)
-    python cli/main.py batch-download "https://asuracomic.net/series/example-manga-url" --chapters "1,3,5"
+*   **Dynamic domain resolution** - Asura rotates its TLD frequently, so
+    nothing is hard-coded. On boot the resolver probes several candidate
+    domains concurrently, verifies the API's `/health` endpoint and caches
+    the result for six hours.
+*   **Data-layer extraction** - series metadata, the chapter list and the
+    page image URLs all come from JSON endpoints. No browser, no DOM.
+*   **Token buckets** - the API and the image CDN get separate rate
+    limiters, so a metadata-heavy run never throttles image throughput.
+*   **Rotating fingerprints** - the `User-Agent` / `Sec-CH-UA` pair rotates
+    per request. Cloudflare challenges any request without a browser
+    `User-Agent`.
+*   **In-memory compilation** - page bytes are decoded and written into the
+    PDF/CBZ in RAM, then saved once. Pillow runs in a worker thread so the
+    event loop never stalls.
 
-    # Download all chapters
-    python cli/main.py batch-download "https://asuracomic.net/series/example-manga-url" --all
-    ```
+## Technologies and Dependencies
 
-*   **Interactive CLI Mode:**
-    ```bash
-    python cli/main.py interactive
-    ```
-    Follow the on-screen prompts to navigate through search, chapter selection, and download options.
-
-For detailed CLI usage instructions and examples, please refer to the [CLI_usage.md](CLI_usage.md) file.
-
-## Important Notes
-
-*   **Dynamic Loading:** This tool uses Playwright (browser automation) instead of static scraping. This is required because AsuraScans loads content and images dynamically via JavaScript.
-*   **Download Speeds:** Large batch downloads may take time depending on your system, internet speed, and current host server load.
-
-## Technologies and Dependencies Used
-
-| Package | Purpose | Recommended Version |
+| Package | Purpose | Version |
 | --- | --- | --- |
-| Python | Core programming language | 3.8+ |
-| PyQt5 | GUI framework | >=5.15.0 |
+| Python | Core language (PEP 810/814/798/686) | 3.15+ |
 | Typer | CLI framework | >=0.9.0 |
-| Playwright | Dynamic scraping engine | >=1.40.0 |
-| BeautifulSoup4 | HTML/XML parsing | >=4.12.0 |
-| Pillow | Image processing and conversion | >=10.0.0 |
-| Requests | HTTP fallback/requests | >=2.31.0 |
-| Rich | CLI UI enhancement | >=13.7.0 |
-| Colorlog | Colored logging in console | >=6.7.0 |
-| Natsort | Natural sorting of chapters | >=8.4.0 |
+| Rich | CLI output | >=13.7.0 |
+| aiohttp | Async HTTP client | >=3.9.0 |
+| Pillow | PDF compilation | >=10.0.0 |
+| PyQt5 | Desktop GUI (optional) | >=5.15.0 |
+| brotli | Faster CDN transfers (optional) | >=1.1.0 |
 
 ## Contributing
 
-Contributions are welcome. If you have suggestions for improvements, bug reports, or want to contribute code:
+Contributions are welcome. If you have suggestions for improvements, bug
+reports, or want to contribute code:
 
 *   Open an issue for bugs or suggestions.
-*   Submit a pull request on the [GitHub repository](https://github.com/Yui007/asuracomic_downloader).
+*   Submit a pull request on the
+    [GitHub repository](https://github.com/Yui007/asuracomic_downloader).
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE)
+file for details.

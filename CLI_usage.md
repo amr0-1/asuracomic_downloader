@@ -1,152 +1,191 @@
 # AsuraComic Downloader - CLI Usage
 
-This document provides instructions on how to use the command-line interface (CLI) of the AsuraComic Downloader.
+Everything is driven from the single root entry point, `main.py`:
 
-## Installation
+```bash
+python main.py <command> [OPTIONS]
+```
 
-1.  Clone the repository:
-    ```bash
-    git clone https://github.com/your-username/asuracomic-downloader.git
-    cd asuracomic-downloader
-    ```
-
-2.  Install the required dependencies:
-    ```bash
-    pip install -r requirements.txt
-    ```
+> **Requirements:** Python 3.15+, then `pip install -r requirements.txt`.
 
 ## Commands
 
+| Command | Purpose |
+| --- | --- |
+| `search` | Search Asura Scans for a series |
+| `chapters` | List the chapters available for a series |
+| `download` | Download a single chapter and compile it |
+| `batch` | Download several chapters in one run |
+| `gui` | Launch the PyQt5 desktop application |
+
+---
+
 ### `search`
 
-Searches for a manga on AsuraComic.
+Search for a series by title.
 
 **Usage:**
 
 ```bash
-python cli/main.py search [OPTIONS] QUERY
+python main.py search [OPTIONS] QUERY
 ```
 
 **Arguments:**
 
-*   `QUERY`: The search query for the manga. (Required)
+* `QUERY` - the title to search for. (Required)
 
 **Options:**
 
-*   `--pages, -p`: The number of pages to search. (Default: `1`)
+* `--pages, -p` - how many result pages to fetch. (Default: `1`)
+* `--limit, -n` - results per page, up to 50. (Default: `20`)
 
 **Example:**
 
 ```bash
-python cli/main.py search "Solo Leveling" --pages 2
+python main.py search "solo swordmaster" --pages 2
 ```
 
-### `get-chapters`
+---
 
-Scrapes and lists all available chapters for a given manga series.
+### `chapters`
+
+List every chapter of a series. Accepts a full URL or a bare slug.
 
 **Usage:**
 
 ```bash
-python cli/main.py get-chapters [OPTIONS] URL
+python main.py chapters [OPTIONS] URL
 ```
 
 **Arguments:**
 
-*   `URL`: The URL of the manga series on AsuraComic. (Required)
+* `URL` - the series URL or slug. (Required)
+
+**Options:**
+
+* `--premium / --no-premium` - include or hide paywalled chapters. (Default: include)
 
 **Example:**
 
 ```bash
-python cli/main.py get-chapters "https://asuracomic.net/series/return-of-the-apocalypse-class-death-knight-bc6665d9"
+python main.py chapters https://asurascans.com/comics/solo-swordmaster
+python main.py chapters solo-swordmaster --no-premium
 ```
+
+---
 
 ### `download`
 
-Downloads a single chapter from a given URL.
+Download a single chapter and compile it to PDF or CBZ.
 
 **Usage:**
 
 ```bash
-python cli/main.py download [OPTIONS] CHAPTER_URL
+python main.py download [OPTIONS] URL
 ```
 
 **Arguments:**
 
-*   `CHAPTER_URL`: The URL of the chapter to download. (Required)
+* `URL` - the chapter URL. (Required)
 
 **Options:**
 
-*   `--output, -o`: The directory to save the downloaded chapter. (Default: `downloads`)
-*   `--format, -f`: The output format (`pdf` or `cbz`). If provided, the downloaded chapter will be converted.
-*   `--delete, -d`: Delete the original image folder after a successful conversion. (Only works if `--format` is used)
+* `--output, -o` - output directory. (Default: `downloads`)
+* `--format, -f` - `pdf`, `cbz` or `none` (raw images only). (Default: `pdf`)
+* `--keep-images` - also keep the individual page images alongside the output.
 
 **Example:**
 
 ```bash
-python cli/main.py download "https://asuracomic.net/series/return-of-the-apocalypse-class-death-knight-bc6665d9/chapter/1" -o my_manga --format pdf --delete
+python main.py download https://asurascans.com/comics/solo-swordmaster/chapter/25 \
+    --output my_downloads --format pdf
 ```
 
-### `batch-download`
+If the chapter is paywalled, the command prints a warning, writes nothing
+and exits successfully - a locked chapter never aborts the run.
 
-Downloads a batch of chapters from a manga series in parallel for faster performance. You can download by a range, a specific list, or all at once.
+---
+
+### `batch`
+
+Download several chapters of a series.
 
 **Usage:**
 
 ```bash
-python cli/main.py batch-download [OPTIONS] MANGA_URL
+python main.py batch [OPTIONS] URL
 ```
 
 **Arguments:**
 
-*   `MANGA_URL`: The URL of the manga series. (Required)
+* `URL` - the series URL or slug. (Required)
 
 **Options:**
 
-*   `--chapters, -c`: A comma-separated list of chapter numbers or a range (e.g., '1-5', '1,3,5').
-*   `--all`: Download all chapters.
-*   `--output, -o`: The directory to save the downloaded chapters. (Default: `downloads`)
-*   `--format, -f`: The output format (`pdf` or `cbz`). If provided, the downloaded chapters will be converted.
-*   `--delete, -d`: Delete the original image folders after a successful conversion. (Only works if `--format` is used)
+* `--chapters, -c` - chapter numbers. Accepts `1-5`, `1,3,5` and
+  combinations such as `1-3,7,10-12`.
+* `--all` - download every chapter.
+* `--output, -o` - output directory. (Default: `downloads`)
+* `--format, -f` - `pdf`, `cbz` or `none`. (Default: `pdf`)
+* `--keep-images` - also keep the individual page images.
 
 **Examples:**
 
-*   **Download a range of chapters:**
-    ```bash
-    python cli/main.py batch-download "https://asuracomic.net/series/return-of-the-apocalypse-class-death-knight-bc6665d9" --chapters "1-5"
-    ```
+```bash
+# A range
+python main.py batch solo-swordmaster --chapters "1-5" --format cbz
 
-*   **Download specific chapters:**
-    ```bash
-    python cli/main.py batch-download "https://asuracomic.net/series/return-of-the-apocalypse-class-death-knight-bc6665d9" --chapters "1,3,5"
-    ```
+# A specific list
+python main.py batch solo-swordmaster --chapters "1,3,5"
 
-*   **Download all chapters:**
-    ```bash
-    python cli/main.py batch-download "https://asuracomic.net/series/return-of-the-apocalypse-class-death-knight-bc6665d9" --all
-    ```
+# Mixed
+python main.py batch solo-swordmaster --chapters "1-3,7,10-12"
 
-### `interactive`
+# Everything
+python main.py batch solo-swordmaster --all --format pdf
+```
 
-Launches an interactive CLI to browse and download manga, with support for parallel downloads.
+Either `--chapters` or `--all` is required.
+
+---
+
+### `gui`
+
+Launch the desktop application.
 
 **Usage:**
 
 ```bash
-python cli/main.py interactive
+python main.py gui
 ```
 
-**Features:**
+Requires PyQt5 (`pip install "asuracomic-downloader[gui]"`).
 
-*   **Search for Manga:** Search for your favorite manga and specify how many pages to look through.
-*   **Browse Manga:** Enter a manga series URL to see a list of all available chapters.
-*   **Select & Download:** Choose chapters to download from a list.
-*   **Real-time Logs:** View download progress and logs.
+---
 
-**Example:**
+## Output layout
 
-```bash
-python cli/main.py interactive
+Files are written to:
+
+```
+<output>/
+└── <series-slug>/
+    └── chapter_<number>/
+        ├── chapter-<number>.pdf     # or .cbz
+        └── images/                  # only with --keep-images
+            ├── 001.webp
+            ├── 002.webp
+            └── ...
 ```
 
-Upon launching, you can choose to search for a manga or enter a URL directly. The interactive wizard will guide you through the process of selecting and downloading chapters.
+Pages keep their **true** extension (`.webp`) - they are never renamed to
+`.jpg`.
+
+## Notes
+
+* Asura rotates its domain frequently. The active host is resolved
+  automatically at start-up, so any working URL is accepted.
+* A paywalled chapter is reported as skipped and the batch continues with
+  the remaining chapters.
+* Compilation happens in memory; the individual page images are never
+  written to disk unless `--keep-images` is given.

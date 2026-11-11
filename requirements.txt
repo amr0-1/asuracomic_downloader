@@ -1,10 +1,12 @@
+# Core runtime
 typer
 rich
-requests
-beautifulsoup4
-colorlog
-playwright
+aiohttp
 Pillow
-natsort
+
+# Optional: the PyQt5 desktop GUI (python main.py gui)
 PyQt5
-playwright
+
+# Optional: enables brotli content-encoding for faster CDN downloads.
+# Without it the extractor negotiates gzip/deflate instead.
+brotli

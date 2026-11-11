@@ -1,0 +1,31 @@
+[project]
+name = "asuracomic-downloader"
+version = "4.0.0"
+description = "Async, API-driven Asura Scans manga downloader"
+readme = "README.md"
+requires-python = ">=3.15"
+license = { file = "LICENSE" }
+
+dependencies = [
+    "typer",
+    "rich",
+    "aiohttp",
+    "Pillow",
+]
+
+[project.optional-dependencies]
+# The PyQt5 desktop GUI: python main.py gui
+gui = ["PyQt5"]
+# Enables brotli content-encoding, which the Asura CDN uses by default.
+brotli = ["brotli"]
+
+[project.scripts]
+asura = "main:app"
+
+[tool.ruff]
+target-version = "py315"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = ["E501"]
